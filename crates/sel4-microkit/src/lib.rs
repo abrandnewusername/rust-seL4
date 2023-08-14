@@ -51,7 +51,7 @@ mod message;
 pub mod panicking;
 
 pub use cspace::{
-    Channel, DeferredAction, DeferredActionInterface, DeferredActionSlot, IrqAckError,
+    Channel, Child, DeferredAction, DeferredActionInterface, DeferredActionSlot, IrqAckError,
 };
 pub use env::{pd_is_passive, pd_name};
 pub use handler::{Handler, Infallible, NullHandler};

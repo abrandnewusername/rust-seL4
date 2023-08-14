@@ -23,6 +23,7 @@ const BASE_ENDPOINT_CAP: Slot = BASE_OUTPUT_NOTIFICATION_CAP + 64;
 const BASE_IRQ_CAP: Slot = BASE_ENDPOINT_CAP + 64;
 
 const MAX_CHANNELS: Slot = 63;
+const MAX_CHILDREN: Slot = 63;
 
 const fn slot_to_cap<T: sel4::CapType>(slot: Slot) -> sel4::Cap<T> {
     sel4::Cap::from_bits(slot as sel4::CPtrBits)
@@ -78,6 +79,26 @@ impl Channel {
     /// Prepare a [`DeferredAction`] for syscall coalescing using [`Handler::take_deferred_action`].
     pub fn defer_irq_ack(&self) -> DeferredAction {
         DeferredAction::new(*self, DeferredActionInterface::IrqAck)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Child {
+    index: usize,
+}
+
+impl Child {
+    pub const fn new(index: usize) -> Self {
+        assert!(index < MAX_CHILDREN);
+        Self { index }
+    }
+
+    pub fn unwrap(&self) -> usize {
+        self.index
+    }
+
+    pub fn reply(&self, msg_info: MessageInfo) {
+        REPLY_CAP.send(msg_info.into_sel4());
     }
 }
 

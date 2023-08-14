@@ -9,12 +9,13 @@ use core::fmt;
 pub use core::convert::Infallible;
 
 use crate::cspace::{
-    Channel, DeferredAction, PreparedDeferredAction, INPUT_CAP, MONITOR_EP_CAP, REPLY_CAP,
+    Channel, Child, DeferredAction, PreparedDeferredAction, INPUT_CAP, MONITOR_EP_CAP, REPLY_CAP,
 };
 use crate::message::MessageInfo;
 use crate::pd_is_passive;
 
 const EVENT_TYPE_MASK: sel4::Word = 1 << (sel4::WORD_SIZE - 1);
+const FAULT_TYPE_MASK: sel4::Word = 1 << (sel4::WORD_SIZE - 2);
 
 /// Trait for the application-specific part of a protection domain's main loop.
 pub trait Handler {
@@ -37,6 +38,14 @@ pub trait Handler {
         msg_info: MessageInfo,
     ) -> Result<MessageInfo, Self::Error> {
         panic!("unexpected protected procedure call from channel {channel:?} with msg_info={msg_info:?}")
+    }
+
+    fn fault(
+        &mut self,
+        id: Child,
+        msg_info: MessageInfo
+    ) -> Result<(), Self::Error> {
+        panic!("unexpected fault from child with ID {id:?} with msg_info={msg_info:?}")
     }
 
     /// An advanced feature for use by protection domains which seek to coalesce syscalls when
@@ -79,8 +88,12 @@ pub(crate) fn run_handler<T: Handler>(mut handler: T) -> Result<Never, T::Error>
         let tag = MessageInfo::from_sel4(tag);
 
         let is_endpoint = badge & EVENT_TYPE_MASK != 0;
+        let is_fault = badge & FAULT_TYPE_MASK != 0;
 
-        if is_endpoint {
+        if is_fault {
+            let child_index = badge & (sel4::Word::try_from(sel4::WORD_SIZE).unwrap() - 2);
+            handler.fault(Child::new(child_index.try_into().unwrap()), tag);
+        } else if is_endpoint {
             let channel_index = badge & (sel4::Word::try_from(sel4::WORD_SIZE).unwrap() - 1);
             reply_tag =
                 Some(handler.protected(Channel::new(channel_index.try_into().unwrap()), tag)?);
