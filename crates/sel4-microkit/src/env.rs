@@ -21,21 +21,21 @@ pub(crate) unsafe fn get_ipc_buffer() -> &'static mut sel4::IpcBuffer {
 #[no_mangle]
 #[used(linker)]
 #[link_section = ".data"]
-static passive: ImmutableCell<bool> = ImmutableCell::new(false); // just a placeholder
+static rust_passive: ImmutableCell<bool> = ImmutableCell::new(false); // just a placeholder
 
 /// Returns whether this projection domain is a passive server.
 pub fn pd_is_passive() -> bool {
-    *passive.get()
+    *rust_passive.get()
 }
 
 #[no_mangle]
 #[used(linker)]
 #[link_section = ".data"]
-static microkit_name: ImmutableCell<[u8; 16]> = ImmutableCell::new([0; 16]);
+static rust_microkit_name: ImmutableCell<[u8; 16]> = ImmutableCell::new([0; 16]);
 
 /// Returns the name of this projection domain.
 pub fn pd_name() -> &'static str {
-    let all_bytes = microkit_name.get();
+    let all_bytes = rust_microkit_name.get();
     let bytes = match core::ffi::CStr::from_bytes_until_nul(all_bytes) {
         Ok(cstr) => cstr.to_bytes(),
         Err(_) => all_bytes,
