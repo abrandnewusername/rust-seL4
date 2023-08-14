@@ -54,7 +54,7 @@ impl MessageInfo {
             let num_bytes = self.count() * mem::size_of::<MessageRegisterValue>();
             Unalign::read_from_prefix(&bytes[..num_bytes])
                 .ok_or(MessageInfoRecvError::MessageTooShort)
-                .map(|unalign| unalign.get())
+                .map(|unalign: Unalign<T>| unalign.get())
         })
     }
 }
