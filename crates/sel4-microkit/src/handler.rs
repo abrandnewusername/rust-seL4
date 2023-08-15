@@ -92,7 +92,7 @@ pub(crate) fn run_handler<T: Handler>(mut handler: T) -> Result<Never, T::Error>
 
         if is_fault {
             let child_index = badge & (sel4::Word::try_from(sel4::WORD_SIZE).unwrap() - 2);
-            handler.fault(Child::new(child_index.try_into().unwrap()), tag);
+            handler.fault(Child::new(child_index.try_into().unwrap()), tag)?;
         } else if is_endpoint {
             let channel_index = badge & (sel4::Word::try_from(sel4::WORD_SIZE).unwrap() - 1);
             reply_tag =
