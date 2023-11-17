@@ -1,4 +1,4 @@
-use crate::cspace::{Channel, INPUT_CAP, REPLY_CAP};
+use crate::cspace::{Channel, INPUT_CAP, REPLY_CAP, SIGNAL_QUEUED};
 use crate::is_passive;
 use crate::message::MessageInfo;
 
@@ -21,10 +21,38 @@ pub trait Handler {
         assert!(!is_passive());
         let mut reply_tag: Option<MessageInfo> = None;
         loop {
+            // let mut badge: Badge = 0;
+            // if let Some(tag) = reply_tag {
+            //     tag, badge = INPUT_CAP.reply_recv(tag.into_sel4(), REPLY_CAP);
+            // } else if let Some((send_cap, msg)) = SIGNAL_QUEUED {
+            //     tag, badge = INPUT_CAP.nb_send_recv(send_cap, msg, REPLY_CAP);
+            // } else {
+            //     tag, badge = INPUT_CAP.recv(REPLY_CAP);
+            // }
+
             let (tag, badge) = match reply_tag {
                 Some(tag) => INPUT_CAP.reply_recv(tag.into_sel4(), REPLY_CAP),
-                None => INPUT_CAP.recv(REPLY_CAP),
+                None => {
+                    unsafe {
+                        if let Some((send_cap, _)) = &SIGNAL_QUEUED {
+                            INPUT_CAP.nb_send_recv(MessageInfo::new(0, 0).into_sel4(), *send_cap, REPLY_CAP)
+                        } else {
+                            INPUT_CAP.recv(REPLY_CAP)
+                        }
+                    }
+                }
             };
+
+            unsafe {
+                SIGNAL_QUEUED = None;
+            }
+            // let (tag, badge) = match reply_tag {
+            //     Some(tag) => INPUT_CAP.reply_recv(tag.into_sel4(), REPLY_CAP),
+            //     None => {
+            //         if Some()
+            //         INPUT_CAP.recv(REPLY_CAP),
+            //     }
+            // };
 
             let tag = MessageInfo::from_sel4(tag);
 

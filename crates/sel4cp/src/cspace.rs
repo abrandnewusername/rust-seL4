@@ -13,6 +13,8 @@ const BASE_IRQ_CAP: Slot = BASE_ENDPOINT_CAP + 64;
 
 const MAX_CHANNELS: Slot = 63;
 
+pub static mut SIGNAL_QUEUED: Option<(sel4::LocalCPtr<sel4::cap_type::Notification>, MessageInfo)> = None;
+
 const fn slot_to_local_cptr<T: sel4::CapType>(slot: Slot) -> sel4::LocalCPtr<T> {
     sel4::LocalCPtr::from_bits(slot as sel4::CPtrBits)
 }
@@ -35,6 +37,21 @@ impl Channel {
     pub fn notify(&self) {
         self.local_cptr::<sel4::cap_type::Notification>(BASE_OUTPUT_NOTIFICATION_CAP)
             .signal()
+    }
+
+    pub fn notify_is_queued(&self) -> bool {
+        unsafe {
+            SIGNAL_QUEUED.is_some()
+        }
+    }
+
+    pub fn notify_queue(&self) {
+        unsafe {
+            SIGNAL_QUEUED = Some((
+                self.local_cptr::<sel4::cap_type::Notification>(BASE_OUTPUT_NOTIFICATION_CAP),
+                MessageInfo::new(0, 0)
+            ))
+        }
     }
 
     pub fn irq_ack(&self) -> Result<(), sel4::Error> {
