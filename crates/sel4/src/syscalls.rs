@@ -10,7 +10,7 @@ use sel4_config::{sel4_cfg, sel4_cfg_if};
 
 use crate::{
     cap_type, const_helpers::u32_into_usize, sys, Cap, CapType, ConveysReplyAuthority, Endpoint,
-    InvocationContext, MessageInfo, Notification, Word, NUM_FAST_MESSAGE_REGISTERS,
+    InvocationContext, MessageInfo, Notification, Word, NUM_FAST_MESSAGE_REGISTERS, Reply
 };
 
 #[sel4_cfg(not(KERNEL_MCS))]
@@ -29,6 +29,8 @@ impl IpcCapType for cap_type::Notification {}
 
 impl IpcCapType for cap_type::Endpoint {}
 
+impl IpcCapType for cap_type::Reply {}
+
 // HACK
 impl IpcCapType for cap_type::Unspecified {}
 
@@ -45,6 +47,17 @@ sel4_cfg_if! {
         fn wait_message_info_from_sys(info: sys::WaitMessageInfo) -> WaitMessageInfo {
             info
         }
+    }
+}
+
+impl<C: InvocationContext> Reply<C> {
+    /// Corresponds to `seL4_Send`.
+    pub fn send(self, info: MessageInfo) {
+        self.invoke(|cptr, ipc_buffer| {
+            ipc_buffer
+                .inner_mut()
+                .seL4_Send(cptr.bits(), info.into_inner())
+        })
     }
 }
 
