@@ -23,11 +23,10 @@ use sel4_dlmalloc::StaticHeapBounds;
 use sel4_logging::{LevelFilter, Logger, LoggerBuilder};
 use sel4_root_task::root_task;
 
-const LOG_LEVEL: LevelFilter = {
-    // LevelFilter::Trace
-    // LevelFilter::Debug
-    LevelFilter::Info
-};
+const LOG_LEVEL: LevelFilter =
+    LevelFilter::Trace;
+    // LevelFilter::Debug;
+    // LevelFilter::Info;
 
 sel4::config::sel4_cfg_if! {
     if #[sel4_cfg(PRINTING)] {

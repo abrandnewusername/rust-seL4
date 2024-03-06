@@ -351,6 +351,7 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
                         }
                         #[sel4_cfg(ARCH_X86_64)]
                         Object::IrqMsi(obj) => {
+                            trace!("registering MSI IRQ pci bus: {}, pci_dev: {}, pci_func: {}, handle: {}, irq: {}", obj.extra.pci_bus, obj.extra.pci_dev, obj.extra.pci_func, obj.extra.handle, *irq);
                             init_thread::slot::IRQ_CONTROL.cap().irq_control_get_msi(
                                 obj.extra.pci_bus,
                                 obj.extra.pci_dev,
@@ -448,10 +449,12 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
                         let orig_cptr = self.orig_relative_cptr(logical_nfn_cap.object);
                         let slot = self.cslot_alloc_or_panic();
                         let cptr = cslot_to_relative_cptr(slot);
+                        // @ivanv: does not does not respect cap rights?
                         cptr.mint(&orig_cptr, CapRights::all(), badge)?;
                         slot.cap().downcast()
                     }
                 };
+                trace!("setting notification {:?} on IRQ handler", {nfn});
                 irq_handler.irq_handler_set_notification(nfn)?;
             }
         }
@@ -552,6 +555,7 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
         vaddr: usize,
         obj: &object::PageTable,
     ) -> Result<()> {
+        trace!("init VSpace: {:?}, vaddr: {}", vspace, vaddr);
         for (i, entry) in obj.entries() {
             let vaddr = vaddr + (i << sel4::vspace_levels::step_bits(level));
             match entry {
@@ -613,9 +617,12 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
         for (obj_id, obj) in self.spec().filter_objects::<&object::Tcb>() {
             let tcb = self.orig_cap::<cap_type::Tcb>(obj_id);
 
+            debug!("initializing TCB {:?}", tcb);
+
             if let Some(bound_notification) = obj.bound_notification() {
                 let bound_notification =
                     self.orig_cap::<cap_type::Notification>(bound_notification.object);
+                debug!("binding tcb {:?} to notification {:?}", tcb, bound_notification);
                 tcb.tcb_bind_notification(bound_notification)?;
             }
 
@@ -690,6 +697,7 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
                             },
                         };
 
+                        info!("setting TCB fault_ep to {:?}", fault_ep);
                         tcb.tcb_set_sched_params(
                             authority,
                             max_prio,
@@ -736,9 +744,9 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
                 tcb.tcb_write_all_registers(false, &mut regs)?;
             }
 
-            if let Some(name) = self.object_name(self.spec().name(obj_id)) {
-                sel4::sel4_cfg_if! {
-                    if #[sel4_cfg(PRINTING)] {
+            sel4::sel4_cfg_if! {
+                if #[sel4_cfg(PRINTING)] {
+                    if let Some(name) = self.object_name(self.spec().name(obj_id)) {
                         tcb.debug_name(name.as_bytes());
                     }
                 }
