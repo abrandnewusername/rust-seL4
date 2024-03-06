@@ -737,7 +737,11 @@ impl<'a, N: ObjectName, D: Content, M: GetEmbeddedFrame, B: BorrowMut<[PerObject
             }
 
             if let Some(name) = self.object_name(self.spec().name(obj_id)) {
-                tcb.debug_name(name.as_bytes());
+                sel4::sel4_cfg_if! {
+                    if #[sel4_cfg(PRINTING)] {
+                        tcb.debug_name(name.as_bytes());
+                    }
+                }
             }
         }
         Ok(())

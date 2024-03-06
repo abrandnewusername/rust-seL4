@@ -29,10 +29,22 @@ const LOG_LEVEL: LevelFilter = {
     LevelFilter::Info
 };
 
+sel4::config::sel4_cfg_if! {
+    if #[sel4_cfg(PRINTING)] {
+        pub use sel4::debug_print;
+    } else {
+        /// No-op for this configuration.
+        #[macro_export]
+        macro_rules! debug_print {
+            ($($arg:tt)*) => {};
+        }
+    }
+}
+
 static LOGGER: Logger = LoggerBuilder::const_default()
     .level_filter(LOG_LEVEL)
     .filter(|meta| meta.target() == "sel4_capdl_initializer_core")
-    .write(|s| sel4::debug_print!("{}", s))
+    .write(|s| { debug_print!("{}", s); })
     .build();
 
 #[root_task(stack_size = 0x10000)]
