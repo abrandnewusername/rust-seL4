@@ -122,7 +122,7 @@ pub fn pd_is_passive() -> bool {
 
 /// Returns the name of this projection domain without converting to unicode.
 pub fn pd_name_bytes() -> &'static [u8] {
-    let all_bytes = maybe_extern_var!(microkit_name: [u8; 16] = [0; 16]);
+    let all_bytes = maybe_extern_var!(microkit_name: [u8; 64] = [0; 64]);
     let n = all_bytes.iter().take_while(|b| **b != 0).count();
     &all_bytes[..n]
 }
