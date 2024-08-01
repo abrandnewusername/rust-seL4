@@ -734,8 +734,37 @@ sel4_cfg_if! {
     }
 }
 
+sel4_cfg_if! {
+    if #[sel4_cfg(KERNEL_X86_DANGEROUS_MSR)] {
+        pub fn seL4_X86DangerousRDMSR(msr: seL4_Word) -> u64 {
+            let mut mr0 = 0;
+            let mut mr1 = 0;
+            let mut mr2 = 0;
+            let mut mr3 = 0;
+
+            let _ = sys_recv(
+                syscall_id::X86DangerousRDMSR,
+                msr,
+                &mut mr0,
+                &mut mr1,
+                &mut mr2,
+                &mut mr3,
+                UNUSED_REPLY_ARG,
+            );
+            
+            mr0
+        }
+
+        pub fn seL4_X86DangerousWRMSR(msr: seL4_Word, value: u64) {
+            let msg_info = seL4_MessageInfo::new(0, 0, 0, 0);
+
+            sys_send(syscall_id::X86DangerousWRMSR, msr, msg_info, value, 0, 0, 0)
+        }
+    }
+}
+
 #[sel4_cfg(SET_TLS_BASE_SELF)]
-pub fn seL4_SetTLSBase(tls_base: seL4_Word) {
+pub fn seL4_SetTLSBase(msr: seL4_Word, value: seL4_Word) {
     let msg_info = seL4_MessageInfo::new(0, 0, 0, 0);
     sys_send_null(syscall_id::SetTLSBase, tls_base, msg_info)
 }

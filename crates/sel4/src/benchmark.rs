@@ -7,7 +7,9 @@
 
 use sel4_config::sel4_cfg_if;
 
-use crate::{sys, Error, Result, Tcb, Word, UnspecifiedFrame};
+use crate::cap::{Tcb, UnspecifiedFrame};
+
+use crate::{sys, Error, Result, Word};
 
 pub fn benchmark_reset_log() -> Result<()> {
     Error::wrap(sys::seL4_BenchmarkResetLog())
@@ -42,5 +44,18 @@ sel4_cfg_if! {
                 }
             }
         }
+    }
+}
+
+sel4_cfg_if! {
+    if #[sel4_cfg(KERNEL_X86_DANGEROUS_MSR)] {
+        pub fn x86_dangerous_rdmsr(msr: Word) -> u64 {
+            sys::seL4_X86DangerousRDMSR(msr)
+        }
+
+        pub fn x86_dangerous_wrmsr(msr: Word, value: Word) {
+            sys::seL4_X86DangerousWRMSR(msr, value)
+        }
+
     }
 }

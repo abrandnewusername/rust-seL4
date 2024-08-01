@@ -192,6 +192,12 @@ sel4_cfg_if! {
                     benchmark_dump_all_thread_utilisation,
                     benchmark_reset_all_thread_utilisation,
                 };
+            
+                #[sel4_cfg(KERNEL_X86_DANGEROUS_MSR)]
+                pub use benchmark::{
+                    x86_dangerous_rdmsr,
+                    x86_dangerous_wrmsr,
+                };
             }
         }
     }
